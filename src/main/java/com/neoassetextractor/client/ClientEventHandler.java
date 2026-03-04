@@ -14,8 +14,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -61,8 +59,8 @@ public class ClientEventHandler {
     public static void onScreenKeyPressed(ScreenEvent.KeyPressed.Post event) {
         Minecraft mc = Minecraft.getInstance();
         
-        // Kiểm tra phím extract tab (trong creative inventory)
-        if (KeyBindings.EXTRACT_TAB_KEY.consumeClick()) {
+        // Check nếu phím L được nhấn (keycode 76)
+        if (event.getKeyCode() == 76) { // L key
             if (mc.player == null || mc.level == null) return;
             tryExtractCreativeTab(mc);
         }
@@ -83,59 +81,40 @@ public class ClientEventHandler {
             return;
         }
         
-        // Lấy tab hiện tại qua reflection
-        CreativeModeTab selectedTab = null;
-        try {
-            var menuField = CreativeModeInventoryScreen.class.getDeclaredField("menu");
-            menuField.setAccessible(true);
-            var menu = menuField.get(creativeScreen);
-            
-            var selectedTabField = menu.getClass().getDeclaredField("selectedTab");
-            selectedTabField.setAccessible(true);
-            selectedTab = (CreativeModeTab) selectedTabField.get(menu);
-        } catch (Exception e) {
-            // Fallback: extract tất cả items trong tất cả tabs
-            if (mc.player != null) {
-                mc.player.displayClientMessage(
-                    Component.literal("§eKhông lấy được tab hiện tại, sẽ extract tất cả items..."),
-                    false
-                );
-            }
-            extractAllItems(mc);
-            return;
-        }
-        
-        if (selectedTab == null) {
-            if (mc.player != null) {
-                mc.player.displayClientMessage(
-                    Component.literal("§cKhông tìm thấy tab nào được chọn!"),
-                    true
-                );
-            }
-            return;
-        }
-        
-        String tabName = selectedTab.getDisplayName().getString();
         if (mc.player != null) {
             mc.player.displayClientMessage(
-                Component.literal("§eĐang trích xuất tab: §f" + tabName + "§e..."),
+                Component.literal("§eĐang trích xuất items từ creative inventory..."),
                 false
             );
         }
         
-        // Lấy tất cả items thuộc tab này
+        // Lấy items từ menu slots (items đang hiển thị trong tab hiện tại)
+        var menu = creativeScreen.getMenu();
         List<ItemStack> items = new ArrayList<>();
-        for (var item : BuiltInRegistries.ITEM) {
-            ItemStack stack = new ItemStack(item);
-            if (!stack.isEmpty() && selectedTab.contains(stack)) {
-                items.add(stack);
+        
+        // Duyệt qua tất cả slots trong creative menu
+        for (int i = 0; i < menu.slots.size(); i++) {
+            var slot = menu.slots.get(i);
+            ItemStack stack = slot.getItem();
+            if (!stack.isEmpty()) {
+                // Kiểm tra xem đã có item này chưa (tránh duplicate)
+                boolean isDuplicate = false;
+                for (ItemStack existing : items) {
+                    if (ItemStack.isSameItemSameComponents(stack, existing)) {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+                if (!isDuplicate) {
+                    items.add(stack.copy());
+                }
             }
         }
         
         if (items.isEmpty()) {
             if (mc.player != null) {
                 mc.player.displayClientMessage(
-                    Component.literal("§cTab này không có item nào!"),
+                    Component.literal("§cKhông tìm thấy item nào trong tab hiện tại!"),
                     false
                 );
             }
@@ -163,43 +142,7 @@ public class ClientEventHandler {
         if (mc.player != null) {
             mc.player.displayClientMessage(
                 Component.literal(
-                    "§a✓ Đã trích xuất §f" + finalSuccess + "/" + finalTotal + " §aitems từ tab: §f" + tabName
-                ),
-                false
-            );
-        }
-    }
-    
-    /**
-     * Extract tất cả items (fallback khi không lấy được tab)
-     */
-    private static void extractAllItems(Minecraft mc) {
-        List<ItemStack> items = new ArrayList<>();
-        for (var item : BuiltInRegistries.ITEM) {
-            items.add(new ItemStack(item));
-        }
-        
-        int successCount = 0;
-        int totalCount = items.size();
-        
-        for (ItemStack itemStack : items) {
-            if (itemStack.isEmpty()) continue;
-            
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
-            ExtractionContext context = new ExtractionContext(mc.getResourceManager(), itemId);
-            
-            ExtractionResult result = itemExtractor.extract(context);
-            if (result.isSuccess()) {
-                successCount++;
-            }
-        }
-        
-        final int finalSuccess = successCount;
-        final int finalTotal = totalCount;
-        if (mc.player != null) {
-            mc.player.displayClientMessage(
-                Component.literal(
-                    "§a✓ Đã trích xuất §f" + finalSuccess + "/" + finalTotal + " §aitems"
+                    "§a✓ Đã trích xuất §f" + finalSuccess + "/" + finalTotal + " §aitems từ creative tab"
                 ),
                 false
             );

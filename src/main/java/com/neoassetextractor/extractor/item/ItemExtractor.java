@@ -116,29 +116,34 @@ public class ItemExtractor extends BaseExtractor {
                                  ExtractionResult result) {
         Set<String> texturePaths = ModelParser.extractTexturePaths(modelContent);
         
-        // If no textures found, try to follow parent model
+        // If no textures found, follow parent model chain recursively
         if (texturePaths.isEmpty()) {
-            String parentPath = extractParentModel(modelContent);
-            if (parentPath != null) {
-                result.addMessage("Following parent model: " + parentPath);
-                String parentContent = loadParentModel(context, parentPath);
-                if (parentContent != null) {
-                    texturePaths = ModelParser.extractTexturePaths(parentContent);
-                }
-            }
+            texturePaths = followParentChainForTextures(context, modelContent, result, 0);
         }
         
         for (String texturePath : texturePaths) {
             String[] parts = ResourceUtil.parsePath(texturePath, context.getNamespace());
             String namespace = parts[0];
-            String path = ResourceUtil.removePrefix(parts[1], "item/");
+            String path = parts[1];
             
-            ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
+            // Remove prefix (item/ or block/)
+            path = ResourceUtil.removePrefix(path, "item/");
+            path = ResourceUtil.removePrefix(path, "block/");
+            
+            // Try item texture first
+            ResourceLocation itemLocation = ResourceLocation.fromNamespaceAndPath(
                 namespace, "textures/item/" + path + ".png");
+            byte[] content = ResourceUtil.loadAsBytes(context.getResourceManager(), itemLocation);
             
-            byte[] content = ResourceUtil.loadAsBytes(context.getResourceManager(), location);
+            // If not found, try block texture
             if (content == null) {
-                result.addWarning("Item texture not found: " + location);
+                ResourceLocation blockLocation = ResourceLocation.fromNamespaceAndPath(
+                    namespace, "textures/block/" + path + ".png");
+                content = ResourceUtil.loadAsBytes(context.getResourceManager(), blockLocation);
+            }
+            
+            if (content == null) {
+                result.addWarning("Item texture not found: " + texturePath);
                 continue;
             }
             
@@ -154,6 +159,40 @@ public class ItemExtractor extends BaseExtractor {
                 result.addMessage("Extracted item texture: " + path);
             }
         }
+    }
+    
+    /**
+     * Follow parent model chain recursively to find textures
+     * @param depth Current recursion depth (max 10 to prevent infinite loops)
+     */
+    private Set<String> followParentChainForTextures(ExtractionContext context, String modelContent, 
+                                                      ExtractionResult result, int depth) {
+        // Prevent infinite recursion
+        if (depth > 10) {
+            result.addWarning("Max parent chain depth reached (10)");
+            return java.util.Collections.emptySet();
+        }
+        
+        String parentPath = extractParentModel(modelContent);
+        if (parentPath == null) {
+            return java.util.Collections.emptySet();
+        }
+        
+        result.addMessage("Following parent model [depth=" + depth + "]: " + parentPath);
+        String parentContent = loadParentModel(context, parentPath);
+        if (parentContent == null) {
+            return java.util.Collections.emptySet();
+        }
+        
+        // Try to extract textures from parent
+        Set<String> texturePaths = ModelParser.extractTexturePaths(parentContent);
+        
+        // If still no textures, continue following the chain
+        if (texturePaths.isEmpty()) {
+            return followParentChainForTextures(context, parentContent, result, depth + 1);
+        }
+        
+        return texturePaths;
     }
     
     private String extractParentModel(String modelContent) {
@@ -172,11 +211,24 @@ public class ItemExtractor extends BaseExtractor {
     private String loadParentModel(ExtractionContext context, String parentPath) {
         String[] parts = ResourceUtil.parsePath(parentPath, context.getNamespace());
         String namespace = parts[0];
-        String path = ResourceUtil.removePrefix(parts[1], "item/");
+        String path = parts[1];
         
-        ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
+        // Remove prefix (item/ or block/)
+        path = ResourceUtil.removePrefix(path, "item/");
+        path = ResourceUtil.removePrefix(path, "block/");
+        
+        // Try item model first
+        ResourceLocation itemLocation = ResourceLocation.fromNamespaceAndPath(
             namespace, "models/item/" + path + ".json");
+        String content = ResourceUtil.loadAsString(context.getResourceManager(), itemLocation);
         
-        return ResourceUtil.loadAsString(context.getResourceManager(), location);
+        // If not found, try block model
+        if (content == null) {
+            ResourceLocation blockLocation = ResourceLocation.fromNamespaceAndPath(
+                namespace, "models/block/" + path + ".json");
+            content = ResourceUtil.loadAsString(context.getResourceManager(), blockLocation);
+        }
+        
+        return content;
     }
 }
