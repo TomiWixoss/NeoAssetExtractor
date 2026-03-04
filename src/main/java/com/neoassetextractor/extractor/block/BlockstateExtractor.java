@@ -27,8 +27,12 @@ public class BlockstateExtractor {
             return;
         }
         
-        Path outputPath = AssetWriter.getOutputPath(context.getNamespace(), "blocks/blockstates")
-            .resolve(context.getPath() + ".json");
+        Path outputPath = AssetWriter.getAssetPath(
+            context.getNamespace(), 
+            "blocks", 
+            context.getPath(), 
+            null
+        ).resolve("blockstate.json");
         
         if (jsonWriter.write(outputPath, content)) {
             result.incrementBlockstates();

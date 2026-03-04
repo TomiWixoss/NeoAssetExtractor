@@ -71,8 +71,12 @@ public class BlockModelExtractor {
             return false;
         }
         
-        Path outputPath = AssetWriter.getOutputPath(namespace, "blocks/models")
-            .resolve(path + ".json");
+        Path outputPath = AssetWriter.getAssetPath(
+            context.getNamespace(),
+            "blocks",
+            context.getPath(),
+            "models"
+        ).resolve(path + ".json");
         
         if (jsonWriter.write(outputPath, content)) {
             result.incrementModels();

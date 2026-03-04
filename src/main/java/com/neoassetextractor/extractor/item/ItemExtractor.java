@@ -52,8 +52,12 @@ public class ItemExtractor extends BaseExtractor {
             return null;
         }
         
-        Path outputPath = AssetWriter.getOutputPath(context.getNamespace(), "items/models")
-            .resolve(context.getPath() + ".json");
+        Path outputPath = AssetWriter.getAssetPath(
+            context.getNamespace(),
+            "items",
+            context.getPath(),
+            "models"
+        ).resolve(context.getPath() + ".json");
         
         if (jsonWriter.write(outputPath, content)) {
             result.incrementModels();
@@ -66,6 +70,18 @@ public class ItemExtractor extends BaseExtractor {
     private void extractTextures(ExtractionContext context, String modelContent, 
                                  ExtractionResult result) {
         Set<String> texturePaths = ModelParser.extractTexturePaths(modelContent);
+        
+        // If no textures found, try to follow parent model
+        if (texturePaths.isEmpty()) {
+            String parentPath = extractParentModel(modelContent);
+            if (parentPath != null) {
+                result.addMessage("Following parent model: " + parentPath);
+                String parentContent = loadParentModel(context, parentPath);
+                if (parentContent != null) {
+                    texturePaths = ModelParser.extractTexturePaths(parentContent);
+                }
+            }
+        }
         
         for (String texturePath : texturePaths) {
             String[] parts = ResourceUtil.parsePath(texturePath, context.getNamespace());
@@ -81,13 +97,41 @@ public class ItemExtractor extends BaseExtractor {
                 continue;
             }
             
-            Path outputPath = AssetWriter.getOutputPath(namespace, "items/textures")
-                .resolve(path + ".png");
+            Path outputPath = AssetWriter.getAssetPath(
+                context.getNamespace(),
+                "items",
+                context.getPath(),
+                "textures"
+            ).resolve(path + ".png");
             
             if (textureWriter.write(outputPath, content)) {
                 result.incrementTextures();
                 result.addMessage("Extracted item texture: " + path);
             }
         }
+    }
+    
+    private String extractParentModel(String modelContent) {
+        try {
+            com.google.gson.JsonObject json = new com.google.gson.Gson().fromJson(
+                modelContent, com.google.gson.JsonObject.class);
+            if (json.has("parent")) {
+                return json.get("parent").getAsString();
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        return null;
+    }
+    
+    private String loadParentModel(ExtractionContext context, String parentPath) {
+        String[] parts = ResourceUtil.parsePath(parentPath, context.getNamespace());
+        String namespace = parts[0];
+        String path = ResourceUtil.removePrefix(parts[1], "item/");
+        
+        ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
+            namespace, "models/item/" + path + ".json");
+        
+        return ResourceUtil.loadAsString(context.getResourceManager(), location);
     }
 }
