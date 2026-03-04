@@ -55,6 +55,37 @@ public class ClientEventHandler {
             if (tryExtractBlock(mc.player)) return;
             tryExtractItem(mc.player);
         }
+        
+        // Phím J: Extract Blockbench variants
+        if (KeyBindings.EXTRACT_BLOCKBENCH_KEY.consumeClick()) {
+            if (mc.player == null || mc.level == null) return;
+            
+            HitResult hitResult = mc.player.pick(5.0D, 0.0F, false);
+            if (hitResult.getType() != HitResult.Type.BLOCK) {
+                mc.player.displayClientMessage(
+                    Component.literal("§cHãy nhìn vào block để extract variants!"),
+                    true
+                );
+                return;
+            }
+            
+            BlockHitResult blockHit = (BlockHitResult) hitResult;
+            BlockPos pos = blockHit.getBlockPos();
+            BlockState state = mc.level.getBlockState(pos);
+            ResourceLocation blockId = state.getBlock().builtInRegistryHolder().key().location();
+            
+            mc.player.displayClientMessage(
+                Component.literal("§eĐang extract variants..."),
+                false
+            );
+            
+            int count = com.neoassetextractor.extractor.block.BlockbenchVariantExtractor.extractAllVariants(blockId);
+            
+            mc.player.displayClientMessage(
+                Component.literal("§a✓ Đã extract " + count + " variants!"),
+                false
+            );
+        }
     }
     
     @SubscribeEvent

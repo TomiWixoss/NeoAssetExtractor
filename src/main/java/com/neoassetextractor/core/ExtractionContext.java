@@ -15,6 +15,7 @@ public class ExtractionContext {
     private final String namespace;
     private final String path;
     private String assetType = "items"; // Default to items
+    private boolean blockbenchMode = false; // Blockbench flat format
     
     // Optional fields for block extraction
     private BlockState blockState;
@@ -34,12 +35,14 @@ public class ExtractionContext {
     public String getNamespace() { return namespace; }
     public String getPath() { return path; }
     public String getAssetType() { return assetType; }
+    public boolean isBlockbenchMode() { return blockbenchMode; }
     public BlockState getBlockState() { return blockState; }
     public Level getLevel() { return level; }
     public BlockPos getBlockPos() { return blockPos; }
     
     // Setters for optional fields
     public void setAssetType(String assetType) { this.assetType = assetType; }
+    public void setBlockbenchMode(boolean blockbenchMode) { this.blockbenchMode = blockbenchMode; }
     public void setBlockState(BlockState blockState) { this.blockState = blockState; }
     public void setLevel(Level level) { this.level = level; }
     public void setBlockPos(BlockPos blockPos) { this.blockPos = blockPos; }

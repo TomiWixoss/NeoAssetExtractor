@@ -29,14 +29,65 @@ public class BlockModelExtractor {
             modelPaths.add(context.getNamespace() + ":block/" + context.getPath());
         }
         
-        // Extract each model
+        // Extract each model (and their parents recursively)
         for (String modelPath : modelPaths) {
-            if (extractModel(context, modelPath, result)) {
-                extractedModels.add(modelPath);
-            }
+            extractModelWithParents(context, modelPath, extractedModels, result, 0);
         }
         
         return extractedModels;
+    }
+    
+    /**
+     * Extract model and all its parents recursively
+     */
+    private void extractModelWithParents(ExtractionContext context, String modelPath,
+                                        Set<String> extractedModels, ExtractionResult result, int depth) {
+        // Prevent infinite recursion
+        if (depth > 10) {
+            result.addWarning("Max model depth reached (10)");
+            return;
+        }
+        
+        // Skip if already extracted
+        if (extractedModels.contains(modelPath)) {
+            return;
+        }
+        
+        String[] parts = ResourceUtil.parsePath(modelPath, context.getNamespace());
+        String namespace = parts[0];
+        String path = ResourceUtil.removePrefix(parts[1], "block/");
+        
+        ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
+            namespace,
+            "models/block/" + path + ".json"
+        );
+        
+        String content = ResourceUtil.loadAsString(context.getResourceManager(), location);
+        if (content == null) {
+            result.addWarning("Model not found: " + location);
+            return;
+        }
+        
+        Path outputPath = AssetWriter.getResourcePackPath(
+            context.getNamespace(),
+            "blocks",
+            context.getPath(),
+            "models",
+            "block"
+        ).resolve(path + ".json");
+        
+        if (jsonWriter.write(outputPath, content)) {
+            result.incrementModels();
+            result.addMessage("Extracted model: " + path);
+            extractedModels.add(modelPath);
+            
+            // Extract parent model recursively
+            String parentPath = extractParentPath(content);
+            if (parentPath != null && !parentPath.startsWith("minecraft:block/") && !parentPath.startsWith("block/")) {
+                result.addMessage("Following parent model [depth=" + depth + "]: " + parentPath);
+                extractModelWithParents(context, parentPath, extractedModels, result, depth + 1);
+            }
+        }
     }
     
     private Set<String> getModelPathsFromBlockstate(ExtractionContext context) {
@@ -55,36 +106,19 @@ public class BlockModelExtractor {
         return BlockstateParser.extractModelPaths(blockstateContent);
     }
     
-    private boolean extractModel(ExtractionContext context, String modelPath, ExtractionResult result) {
-        String[] parts = ResourceUtil.parsePath(modelPath, context.getNamespace());
-        String namespace = parts[0];
-        String path = ResourceUtil.removePrefix(parts[1], "block/");
-        
-        ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
-            namespace,
-            "models/block/" + path + ".json"
-        );
-        
-        String content = ResourceUtil.loadAsString(context.getResourceManager(), location);
-        if (content == null) {
-            result.addWarning("Model not found: " + location);
-            return false;
+    /**
+     * Extract parent path from model JSON
+     */
+    private String extractParentPath(String modelContent) {
+        try {
+            com.google.gson.JsonObject json = new com.google.gson.Gson().fromJson(
+                modelContent, com.google.gson.JsonObject.class);
+            if (json.has("parent")) {
+                return json.get("parent").getAsString();
+            }
+        } catch (Exception e) {
+            // Ignore parse errors
         }
-        
-        Path outputPath = AssetWriter.getResourcePackPath(
-            context.getNamespace(),
-            "blocks",
-            context.getPath(),
-            "models",
-            "block"
-        ).resolve(path + ".json");
-        
-        if (jsonWriter.write(outputPath, content)) {
-            result.incrementModels();
-            result.addMessage("Extracted model: " + path);
-            return true;
-        }
-        
-        return false;
+        return null;
     }
 }

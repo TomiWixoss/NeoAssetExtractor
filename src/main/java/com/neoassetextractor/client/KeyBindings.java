@@ -32,6 +32,16 @@ public class KeyBindings {
         CATEGORY
     );
     
+    // Phím tắt extract Blockbench format (flat structure)
+    // Sử dụng J cho Blockbench-ready output
+    public static final KeyMapping EXTRACT_BLOCKBENCH_KEY = new KeyMapping(
+        "key.neoassetextractor.extract_blockbench",
+        KeyConflictContext.IN_GAME,
+        InputConstants.Type.KEYSYM,
+        GLFW.GLFW_KEY_J,
+        CATEGORY
+    );
+    
     public static void register() {
         // Keybinds sẽ được register trong ClientEventHandler
     }
