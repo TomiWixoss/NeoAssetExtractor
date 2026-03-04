@@ -14,6 +14,7 @@ public class ExtractionContext {
     private final ResourceLocation resourceId;
     private final String namespace;
     private final String path;
+    private String assetType = "items"; // Default to items
     
     // Optional fields for block extraction
     private BlockState blockState;
@@ -32,11 +33,13 @@ public class ExtractionContext {
     public ResourceLocation getResourceId() { return resourceId; }
     public String getNamespace() { return namespace; }
     public String getPath() { return path; }
+    public String getAssetType() { return assetType; }
     public BlockState getBlockState() { return blockState; }
     public Level getLevel() { return level; }
     public BlockPos getBlockPos() { return blockPos; }
     
     // Setters for optional fields
+    public void setAssetType(String assetType) { this.assetType = assetType; }
     public void setBlockState(BlockState blockState) { this.blockState = blockState; }
     public void setLevel(Level level) { this.level = level; }
     public void setBlockPos(BlockPos blockPos) { this.blockPos = blockPos; }

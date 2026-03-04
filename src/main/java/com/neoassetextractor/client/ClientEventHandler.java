@@ -9,7 +9,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -170,9 +172,10 @@ public class ClientEventHandler {
         
         ExtractionContext context = new ExtractionContext(
             Minecraft.getInstance().getResourceManager(), entityId);
+        context.setAssetType("entities");
         
         ExtractionResult result = entityExtractor.extract(context);
-        sendResult(player, result, entityId);
+        sendResult(player, result, context);
         return true;
     }
     
@@ -190,12 +193,13 @@ public class ClientEventHandler {
         
         ExtractionContext context = new ExtractionContext(
             Minecraft.getInstance().getResourceManager(), blockId);
+        context.setAssetType("blocks");
         context.setBlockState(state);
         context.setLevel(player.level());
         context.setBlockPos(pos);
         
         ExtractionResult result = blockExtractor.extract(context);
-        sendResult(player, result, blockId);
+        sendResult(player, result, context);
         return true;
     }
     
@@ -215,24 +219,37 @@ public class ClientEventHandler {
         ResourceLocation itemId = heldItem.getItem().builtInRegistryHolder().key().location();
         ExtractionContext context = new ExtractionContext(
             Minecraft.getInstance().getResourceManager(), itemId);
+        context.setAssetType("items");
         
         ExtractionResult result = itemExtractor.extract(context);
-        sendResult(player, result, itemId);
+        sendResult(player, result, context);
         return true;
     }
     
     /**
      * Gửi kết quả extraction cho player
      */
-    private static void sendResult(Player player, ExtractionResult result, ResourceLocation id) {
+    private static void sendResult(Player player, ExtractionResult result, ExtractionContext context) {
+        ResourceLocation id = context.getResourceId();
+        
         if (result.isSuccess()) {
-            player.displayClientMessage(
-                Component.literal(
-                    "§a✓ Đã trích xuất: §f" + id + "\n" +
-                    "§7" + result.getSummary()
-                ),
-                false
+            // Tạo đường dẫn folder
+            String folderPath = System.getProperty("user.dir") + "/.minecraft/extracted_assets/" 
+                + id.getNamespace() + "/" + context.getAssetType() + "/" + id.getPath();
+            
+            // Message chính
+            Component mainMessage = Component.literal(
+                "§a✓ Đã trích xuất: §f" + id + "\n" +
+                "§7" + result.getSummary() + "\n"
             );
+            
+            // Link mở folder (clickable)
+            Component linkMessage = Component.literal("§e§n[Mở Folder]")
+                .setStyle(Style.EMPTY
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, folderPath))
+                );
+            
+            player.displayClientMessage(mainMessage.copy().append(linkMessage), false);
         } else {
             player.displayClientMessage(
                 Component.literal(

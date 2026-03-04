@@ -28,6 +28,10 @@ public class EntityExtractor extends BaseExtractor {
         
         // For now, extract vanilla entity texture
         extractTexture(context, result);
+        
+        // Create pack.mcmeta for Blockbench compatibility
+        com.neoassetextractor.util.AssetWriter.createPackMcmeta(
+            context.getNamespace(), "entities", context.getPath());
     }
     
     private void extractTexture(ExtractionContext context, ExtractionResult result) {

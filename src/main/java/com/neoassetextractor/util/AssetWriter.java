@@ -90,4 +90,34 @@ public class AssetWriter {
     public static void writeFile(Path path, String content) throws IOException {
         writeFile(path, content.getBytes());
     }
+
+
+    /**
+     * Create pack.mcmeta file for Blockbench compatibility
+     * @param modId The mod ID
+     * @param assetType Type of asset (items/blocks/entities)
+     * @param assetName Name of the specific asset
+     */
+    public static void createPackMcmeta(String modId, String assetType, String assetName) {
+        Path packRoot = OUTPUT_DIR.resolve(modId).resolve(assetType).resolve(assetName);
+        Path packMcmetaPath = packRoot.resolve("pack.mcmeta");
+
+        // Skip if already exists
+        if (Files.exists(packMcmetaPath)) {
+            return;
+        }
+
+        String content = "{\n" +
+            "  \"pack\": {\n" +
+            "    \"pack_format\": 34,\n" +
+            "    \"description\": \"Extracted assets from NeoAssetExtractor\"\n" +
+            "  }\n" +
+            "}";
+
+        try {
+            writeFile(packMcmetaPath, content);
+        } catch (IOException e) {
+            NeoAssetExtractor.LOGGER.warn("Failed to create pack.mcmeta: {}", e.getMessage());
+        }
+    }
 }

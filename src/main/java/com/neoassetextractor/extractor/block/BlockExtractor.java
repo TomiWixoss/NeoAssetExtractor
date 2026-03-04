@@ -29,5 +29,9 @@ public class BlockExtractor extends BaseExtractor {
         
         // 3. Extract all textures from models
         textureExtractor.extract(context, modelPaths, result);
+        
+        // 4. Create pack.mcmeta for Blockbench compatibility
+        com.neoassetextractor.util.AssetWriter.createPackMcmeta(
+            context.getNamespace(), "blocks", context.getPath());
     }
 }

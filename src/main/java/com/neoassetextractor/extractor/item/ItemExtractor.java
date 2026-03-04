@@ -51,6 +51,10 @@ public class ItemExtractor extends BaseExtractor {
         // 2. Extract textures from model
         extractTextures(context, modelContent, result);
         
+        // 3. Create pack.mcmeta for Blockbench compatibility
+        com.neoassetextractor.util.AssetWriter.createPackMcmeta(
+            context.getNamespace(), "items", context.getPath());
+        
         // TODO: Handle item overrides (bow, crossbow, compass)
         // TODO: Handle armor layers
     }
@@ -84,6 +88,10 @@ public class ItemExtractor extends BaseExtractor {
         if (modelContent != null) {
             extractTextures(context, modelContent, result);
         }
+        
+        // 4. Create pack.mcmeta for Blockbench compatibility
+        com.neoassetextractor.util.AssetWriter.createPackMcmeta(
+            context.getNamespace(), "items", context.getPath());
     }
     
     private String extractModel(ExtractionContext context, ExtractionResult result) {
