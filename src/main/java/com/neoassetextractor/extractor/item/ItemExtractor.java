@@ -6,9 +6,14 @@ import com.neoassetextractor.extractor.base.BaseExtractor;
 import com.neoassetextractor.parser.ModelParser;
 import com.neoassetextractor.util.AssetWriter;
 import com.neoassetextractor.util.ResourceUtil;
+import com.neoassetextractor.util.SpawnEggRenderer;
 import com.neoassetextractor.writer.JsonWriter;
 import com.neoassetextractor.writer.TextureWriter;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import java.nio.file.Path;
 import java.util.Set;
@@ -27,6 +32,16 @@ public class ItemExtractor extends BaseExtractor {
     
     @Override
     protected void doExtract(ExtractionContext context, ExtractionResult result) {
+        // Check if this is a spawn egg - needs special rendering
+        ResourceLocation itemId = ResourceLocation.fromNamespaceAndPath(
+            context.getNamespace(), context.getPath());
+        Item item = BuiltInRegistries.ITEM.get(itemId);
+        
+        if (SpawnEggRenderer.isSpawnEgg(item)) {
+            extractSpawnEgg(context, item, result);
+            return;
+        }
+        
         // 1. Extract item model JSON
         String modelContent = extractModel(context, result);
         if (modelContent == null) {
@@ -38,6 +53,36 @@ public class ItemExtractor extends BaseExtractor {
         
         // TODO: Handle item overrides (bow, crossbow, compass)
         // TODO: Handle armor layers
+    }
+    
+    private void extractSpawnEgg(ExtractionContext context, Item item, ExtractionResult result) {
+        // 1. Extract model JSON (same as normal items)
+        String modelContent = extractModel(context, result);
+        
+        // 2. Render spawn egg with actual colors using ItemColors
+        ItemStack itemStack = new ItemStack(item);
+        byte[] renderedTexture = SpawnEggRenderer.renderSpawnEgg(itemStack, context.getResourceManager());
+        
+        if (renderedTexture != null) {
+            Path outputPath = AssetWriter.getAssetPath(
+                context.getNamespace(),
+                "items",
+                context.getPath(),
+                "textures"
+            ).resolve(context.getPath() + "_rendered.png");
+            
+            if (textureWriter.write(outputPath, renderedTexture)) {
+                result.incrementTextures();
+                result.addMessage("Rendered spawn egg with colors: " + context.getPath());
+            }
+        } else {
+            result.addWarning("Failed to render spawn egg colors");
+        }
+        
+        // 3. Also extract base template textures
+        if (modelContent != null) {
+            extractTextures(context, modelContent, result);
+        }
     }
     
     private String extractModel(ExtractionContext context, ExtractionResult result) {
