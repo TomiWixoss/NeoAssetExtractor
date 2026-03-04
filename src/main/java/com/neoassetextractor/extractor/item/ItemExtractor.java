@@ -64,11 +64,12 @@ public class ItemExtractor extends BaseExtractor {
         byte[] renderedTexture = SpawnEggRenderer.renderSpawnEgg(itemStack, context.getResourceManager());
         
         if (renderedTexture != null) {
-            Path outputPath = AssetWriter.getAssetPath(
+            Path outputPath = AssetWriter.getResourcePackPath(
                 context.getNamespace(),
                 "items",
                 context.getPath(),
-                "textures"
+                "textures",
+                "item"
             ).resolve(context.getPath() + "_rendered.png");
             
             if (textureWriter.write(outputPath, renderedTexture)) {
@@ -97,11 +98,12 @@ public class ItemExtractor extends BaseExtractor {
             return null;
         }
         
-        Path outputPath = AssetWriter.getAssetPath(
+        Path outputPath = AssetWriter.getResourcePackPath(
             context.getNamespace(),
             "items",
             context.getPath(),
-            "models"
+            "models",
+            "item"
         ).resolve(context.getPath() + ".json");
         
         if (jsonWriter.write(outputPath, content)) {
@@ -147,11 +149,12 @@ public class ItemExtractor extends BaseExtractor {
                 continue;
             }
             
-            Path outputPath = AssetWriter.getAssetPath(
+            Path outputPath = AssetWriter.getResourcePackPath(
                 context.getNamespace(),
                 "items",
                 context.getPath(),
-                "textures"
+                "textures",
+                "item"
             ).resolve(path + ".png");
             
             if (textureWriter.write(outputPath, content)) {

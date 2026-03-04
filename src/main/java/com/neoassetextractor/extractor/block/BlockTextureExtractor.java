@@ -130,11 +130,12 @@ public class BlockTextureExtractor {
             return false;
         }
         
-        Path outputPath = AssetWriter.getAssetPath(
+        Path outputPath = AssetWriter.getResourcePackPath(
             context.getNamespace(),
             "blocks",
             context.getPath(),
-            "textures"
+            "textures",
+            "block"
         ).resolve(texturePath + ".png");
         
         if (textureWriter.write(outputPath, content)) {
@@ -158,11 +159,12 @@ public class BlockTextureExtractor {
         ResourceLocation texLocation = ResourceLocation.fromNamespaceAndPath(
             namespace, "block/" + texturePath);
         
-        Path tintedPath = AssetWriter.getAssetPath(
+        Path tintedPath = AssetWriter.getResourcePackPath(
             context.getNamespace(),
             "blocks",
             context.getPath(),
-            "textures_tinted"
+            "textures",
+            "block_tinted"
         ).resolve(texturePath + "_tinted.png");
         
         if (TextureCapture.captureBlockTextureWithTint(

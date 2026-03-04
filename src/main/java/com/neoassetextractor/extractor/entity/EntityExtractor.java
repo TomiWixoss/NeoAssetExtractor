@@ -43,12 +43,13 @@ public class EntityExtractor extends BaseExtractor {
             return;
         }
         
-        // Use new path structure: minecraft/entities/{entity_name}/textures/
-        Path outputPath = AssetWriter.getAssetPath(
-            context.getNamespace(), 
-            "entities", 
-            context.getPath(), 
-            "textures"
+        // Use resource pack structure: minecraft/entities/{entity_name}/assets/minecraft/textures/entity/
+        Path outputPath = AssetWriter.getResourcePackPath(
+            context.getNamespace(),
+            "entities",
+            context.getPath(),
+            "textures",
+            "entity"
         ).resolve(context.getPath() + ".png");
         
         if (textureWriter.write(outputPath, content)) {
