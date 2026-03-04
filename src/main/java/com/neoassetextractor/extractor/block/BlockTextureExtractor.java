@@ -56,6 +56,19 @@ public class BlockTextureExtractor {
         
         // Extract texture paths from model
         Set<String> texturePaths = ModelParser.extractTexturePaths(modelContent);
+        
+        // If no textures found, try to follow parent model
+        if (texturePaths.isEmpty()) {
+            String parentPath = extractParentModel(modelContent);
+            if (parentPath != null) {
+                result.addMessage("Following parent model: " + parentPath);
+                String parentContent = loadParentModel(context, parentPath);
+                if (parentContent != null) {
+                    texturePaths = ModelParser.extractTexturePaths(parentContent);
+                }
+            }
+        }
+        
         boolean hasTinting = hasColorHandler || ModelParser.hasTinting(modelContent);
         
         // Extract each texture
@@ -80,6 +93,30 @@ public class BlockTextureExtractor {
                 }
             }
         }
+    }
+    
+    private String extractParentModel(String modelContent) {
+        try {
+            com.google.gson.JsonObject json = new com.google.gson.Gson().fromJson(
+                modelContent, com.google.gson.JsonObject.class);
+            if (json.has("parent")) {
+                return json.get("parent").getAsString();
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        return null;
+    }
+    
+    private String loadParentModel(ExtractionContext context, String parentPath) {
+        String[] parts = ResourceUtil.parsePath(parentPath, context.getNamespace());
+        String namespace = parts[0];
+        String path = ResourceUtil.removePrefix(parts[1], "block/");
+        
+        ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
+            namespace, "models/block/" + path + ".json");
+        
+        return ResourceUtil.loadAsString(context.getResourceManager(), location);
     }
     
     private boolean extractTexture(ExtractionContext context, String namespace, 
