@@ -85,7 +85,7 @@ public class BlockbenchVariantExtractor {
             String completeModel = mergeModelWithParent(modelContent, parentContent);
             Files.writeString(outputDir.resolve("model.json"), completeModel);
             
-            // Save textures
+            // Save textures in textures/ subfolder (Blockbench standard)
             Path texturesDir = outputDir.resolve("textures");
             Files.createDirectories(texturesDir);
             
@@ -170,6 +170,13 @@ public class BlockbenchVariantExtractor {
                 
                 for (String key : textures.keySet()) {
                     String texPath = textures.get(key).getAsString();
+                    
+                    // Skip texture variables (e.g., "#bottom")
+                    if (texPath.startsWith("#")) {
+                        newTextures.addProperty(key, texPath);
+                        continue;
+                    }
+                    
                     // Remove namespace prefix (e.g., "another_furniture:block/chair/bottom/oak")
                     if (texPath.contains(":")) {
                         texPath = texPath.substring(texPath.indexOf(":") + 1);
@@ -178,9 +185,16 @@ public class BlockbenchVariantExtractor {
                     if (texPath.startsWith("block/")) {
                         texPath = texPath.substring(6);
                     }
+                    // Remove "item/" prefix
+                    if (texPath.startsWith("item/")) {
+                        texPath = texPath.substring(5);
+                    }
+                    
                     // Flatten path: chair/bottom/oak -> chair_bottom_oak
-                    String flatPath = "textures/" + texPath.replace("/", "_");
-                    newTextures.addProperty(key, flatPath);
+                    String flatName = texPath.replace("/", "_");
+                    
+                    // Relative path for Blockbench with explicit folder reference
+                    newTextures.addProperty(key, "./textures/" + flatName);
                 }
                 
                 child.add("textures", newTextures);

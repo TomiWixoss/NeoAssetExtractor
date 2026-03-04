@@ -3,6 +3,7 @@ package com.neoassetextractor.extractor.item;
 import com.neoassetextractor.core.ExtractionContext;
 import com.neoassetextractor.core.ExtractionResult;
 import com.neoassetextractor.extractor.base.BaseExtractor;
+import com.neoassetextractor.extractor.recipe.RecipeExtractor;
 import com.neoassetextractor.parser.ModelParser;
 import com.neoassetextractor.util.AssetWriter;
 import com.neoassetextractor.util.ResourceUtil;
@@ -51,7 +52,10 @@ public class ItemExtractor extends BaseExtractor {
         // 2. Extract textures from model
         extractTextures(context, modelContent, result);
         
-        // 3. Create pack.mcmeta for Blockbench compatibility
+        // 3. Extract recipes
+        extractRecipes(context, result);
+        
+        // 4. Create pack.mcmeta for Blockbench compatibility
         com.neoassetextractor.util.AssetWriter.createPackMcmeta(
             context.getNamespace(), "items", context.getPath());
         
@@ -241,5 +245,19 @@ public class ItemExtractor extends BaseExtractor {
         }
         
         return content;
+    }
+    
+    private void extractRecipes(ExtractionContext context, ExtractionResult result) {
+        ResourceLocation itemId = ResourceLocation.fromNamespaceAndPath(
+            context.getNamespace(), context.getPath());
+        
+        Path outputDir = AssetWriter.getResourcePackPath(
+            context.getNamespace(), "items", context.getPath(), "", "").getParent();
+        
+        int recipeCount = RecipeExtractor.extractRecipesForItem(itemId, "items", outputDir);
+        
+        if (recipeCount > 0) {
+            result.addMessage("Extracted " + recipeCount + " recipe(s)");
+        }
     }
 }
