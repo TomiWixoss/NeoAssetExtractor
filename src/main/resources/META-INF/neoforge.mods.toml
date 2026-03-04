@@ -46,7 +46,8 @@ displayName="${mod_name}" #mandatory
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Example mod description.
+Runtime Asset Extraction Mod - Trích xuất chính xác tài nguyên đồ họa (Model, Texture, Animation) 
+của bất kỳ vật thể nào đang được render trên màn hình. Hỗ trợ Items, Blocks, Entities và GeckoLib.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
@@ -86,6 +87,14 @@ Example mod description.
     # This version range declares a minimum of the current minecraft version up to but not including the next major version
     versionRange="${minecraft_version_range}"
     ordering="NONE"
+    side="BOTH"
+
+# GeckoLib dependency (optional - for 3D entity/item support)
+[[dependencies.${mod_id}]]
+    modId="geckolib"
+    type="optional"
+    versionRange="[4.7,)"
+    ordering="AFTER"
     side="BOTH"
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
