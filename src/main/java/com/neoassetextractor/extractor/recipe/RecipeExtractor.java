@@ -26,9 +26,17 @@ public class RecipeExtractor {
         // Tìm tất cả recipes có output là item này
         for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
             try {
-                ResourceLocation resultId = holder.value().getResultItem(null).getItem().builtInRegistryHolder().key().location();
+                // Get result item từ recipe
+                var resultItem = holder.value().getResultItem(Minecraft.getInstance().level.registryAccess());
+                if (resultItem.isEmpty()) {
+                    continue;
+                }
+                
+                ResourceLocation resultId = resultItem.getItem().builtInRegistryHolder().key().location();
                 if (resultId.equals(itemId)) {
                     matchingRecipes.add(holder);
+                    com.neoassetextractor.NeoAssetExtractor.LOGGER.info("Found recipe: {} -> {}", 
+                        holder.id(), resultId);
                 }
             } catch (Exception e) {
                 // Skip recipes không có result item
@@ -36,6 +44,7 @@ public class RecipeExtractor {
         }
         
         if (matchingRecipes.isEmpty()) {
+            com.neoassetextractor.NeoAssetExtractor.LOGGER.info("No recipes found for item: {}", itemId);
             return 0;
         }
         
@@ -54,30 +63,35 @@ public class RecipeExtractor {
                                                String assetType, Path outputDir) {
         ResourceLocation recipeId = holder.id();
         
+        com.neoassetextractor.NeoAssetExtractor.LOGGER.info("Extracting recipe: {}", recipeId);
+        
         // Load recipe JSON từ data pack
         ResourceLocation recipeLocation = ResourceLocation.fromNamespaceAndPath(
             recipeId.getNamespace(),
-            "recipes/" + recipeId.getPath() + ".json"
+            "recipe/" + recipeId.getPath() + ".json"
         );
         
         String recipeContent = ResourceUtil.loadAsString(
             Minecraft.getInstance().getResourceManager(), recipeLocation);
         
         if (recipeContent == null) {
+            com.neoassetextractor.NeoAssetExtractor.LOGGER.warn("Recipe file not found: {}", recipeLocation);
             return false;
         }
         
-        // Output path: {outputDir}/data/{namespace}/recipes/{recipe_name}.json
+        // Output path: {outputDir}/data/{namespace}/recipe/{recipe_name}.json
         Path recipePath = outputDir
             .resolve("data")
             .resolve(recipeId.getNamespace())
-            .resolve("recipes")
+            .resolve("recipe")
             .resolve(recipeId.getPath() + ".json");
         
         try {
             AssetWriter.writeFile(recipePath, recipeContent);
+            com.neoassetextractor.NeoAssetExtractor.LOGGER.info("Wrote recipe: {}", recipePath);
             return true;
         } catch (Exception e) {
+            com.neoassetextractor.NeoAssetExtractor.LOGGER.error("Failed to write recipe: {}", e.getMessage());
             return false;
         }
     }
