@@ -71,17 +71,19 @@ public class BlockbenchVariantExtractor {
             // Extract textures
             Set<String> texturePaths = ModelParser.extractTexturePaths(modelContent);
             
-            // Follow parent if empty
-            if (texturePaths.isEmpty()) {
-                String parentPath = extractParentPath(modelContent);
-                if (parentPath != null) {
-                    String parentContent = loadParentModel(namespace, parentPath);
-                    if (parentContent != null) {
-                        texturePaths = ModelParser.extractTexturePaths(parentContent);
-                        Files.writeString(outputDir.resolve("parent.json"), parentContent);
-                    }
+            // LUÔN load parent nếu có
+            String parentPath = extractParentPath(modelContent);
+            String parentContent = null;
+            if (parentPath != null) {
+                parentContent = loadParentModel(namespace, parentPath);
+                if (parentContent != null && texturePaths.isEmpty()) {
+                    texturePaths = ModelParser.extractTexturePaths(parentContent);
                 }
             }
+            
+            // Merge model with parent
+            String completeModel = mergeModelWithParent(modelContent, parentContent);
+            Files.writeString(outputDir.resolve("model.json"), completeModel);
             
             // Save textures
             Path texturesDir = outputDir.resolve("textures");
@@ -131,5 +133,63 @@ public class BlockbenchVariantExtractor {
         
         return ResourceUtil.loadAsString(
             Minecraft.getInstance().getResourceManager(), location);
+    }
+    
+    private static String mergeModelWithParent(String childContent, String parentContent) {
+        if (parentContent == null) return childContent;
+        
+        try {
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            com.google.gson.JsonObject child = gson.fromJson(childContent, com.google.gson.JsonObject.class);
+            com.google.gson.JsonObject parent = gson.fromJson(parentContent, com.google.gson.JsonObject.class);
+            
+            // Copy elements từ parent
+            if (parent.has("elements")) {
+                child.add("elements", parent.get("elements"));
+            }
+            
+            // Merge textures
+            if (parent.has("textures")) {
+                com.google.gson.JsonObject parentTextures = parent.getAsJsonObject("textures");
+                if (!child.has("textures")) {
+                    child.add("textures", parentTextures);
+                } else {
+                    com.google.gson.JsonObject childTextures = child.getAsJsonObject("textures");
+                    for (String key : parentTextures.keySet()) {
+                        if (!childTextures.has(key)) {
+                            childTextures.add(key, parentTextures.get(key));
+                        }
+                    }
+                }
+            }
+            
+            // Rewrite texture paths thành relative flat paths
+            if (child.has("textures")) {
+                com.google.gson.JsonObject textures = child.getAsJsonObject("textures");
+                com.google.gson.JsonObject newTextures = new com.google.gson.JsonObject();
+                
+                for (String key : textures.keySet()) {
+                    String texPath = textures.get(key).getAsString();
+                    // Remove namespace prefix (e.g., "another_furniture:block/chair/bottom/oak")
+                    if (texPath.contains(":")) {
+                        texPath = texPath.substring(texPath.indexOf(":") + 1);
+                    }
+                    // Remove "block/" prefix
+                    if (texPath.startsWith("block/")) {
+                        texPath = texPath.substring(6);
+                    }
+                    // Flatten path: chair/bottom/oak -> chair_bottom_oak
+                    String flatPath = "textures/" + texPath.replace("/", "_");
+                    newTextures.addProperty(key, flatPath);
+                }
+                
+                child.add("textures", newTextures);
+            }
+            
+            child.remove("parent");
+            return gson.toJson(child);
+        } catch (Exception e) {
+            return childContent;
+        }
     }
 }
