@@ -22,6 +22,14 @@ repositories {
         name = 'GeckoLib'
         url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
     }
+    maven {
+        name = 'Progwml6 (JEI)'
+        url = 'https://dvs1.progwml6.com/files/maven/'
+    }
+    maven {
+        name = 'ModMaven (JEI mirror)'
+        url = 'https://modmaven.dev/'
+    }
 }
 
 base {
@@ -104,12 +112,10 @@ dependencies {
     compileOnly "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.7.1"
     localRuntime "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.7.1"
 
-    // Example optional mod dependency with JEI
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
-    // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
+    // JEI integration for recipe extraction
+    compileOnly "mezz.jei:jei-1.21.1-common-api:19.18.+"
+    compileOnly "mezz.jei:jei-1.21.1-neoforge-api:19.18.+"
+    localRuntime "mezz.jei:jei-1.21.1-neoforge:19.18.+"
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
