@@ -114,20 +114,24 @@ public class BlockTextureExtractor {
     
     private boolean extractTexture(ExtractionContext context, String namespace, 
                                    String texturePath, ExtractionResult result) {
-        // Try "block/" path first (1.13+ style)
-        ResourceLocation location = new ResourceLocation(
-            namespace, "textures/block/" + texturePath + ".png");
-        byte[] content = ResourceUtil.loadAsBytes(context.getResourceManager(), location);
+        // 1. Try raw path first (handles 1.12.2's "blocks/stone" etc.)
+        byte[] content = ResourceUtil.loadAsBytes(context.getResourceManager(),
+            new ResourceLocation(namespace, "textures/" + texturePath + ".png"));
         
-        // Try "blocks/" path (1.12.2 style)
+        // 2. Try with "blocks/" prefix (1.12.2 style)
         if (content == null) {
-            ResourceLocation blocksLocation = new ResourceLocation(
-                namespace, "textures/blocks/" + texturePath + ".png");
-            content = ResourceUtil.loadAsBytes(context.getResourceManager(), blocksLocation);
+            content = ResourceUtil.loadAsBytes(context.getResourceManager(),
+                new ResourceLocation(namespace, "textures/blocks/" + texturePath + ".png"));
+        }
+        
+        // 3. Try with "block/" prefix (1.13+ style)
+        if (content == null) {
+            content = ResourceUtil.loadAsBytes(context.getResourceManager(),
+                new ResourceLocation(namespace, "textures/block/" + texturePath + ".png"));
         }
         
         if (content == null) {
-            result.addWarning("Texture not found: " + location);
+            result.addWarning("Texture not found: " + texturePath);
             return false;
         }
         
@@ -136,7 +140,7 @@ public class BlockTextureExtractor {
             "blocks",
             context.getPath(),
             "textures",
-            "block"
+            "blocks"
         ).resolve(texturePath + ".png");
         
         if (textureWriter.write(outputPath, content)) {

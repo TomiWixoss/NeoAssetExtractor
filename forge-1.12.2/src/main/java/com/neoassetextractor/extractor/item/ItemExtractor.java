@@ -81,36 +81,34 @@ public class ItemExtractor extends BaseExtractor {
         for (String texturePath : texturePaths) {
             String[] parts = ResourceUtil.parsePath(texturePath, context.getNamespace());
             String namespace = parts[0];
-            String path = parts[1];
+            String rawPath = parts[1]; // e.g. "items/diamond_sword" in 1.12.2
             
-            // Remove prefix (item/ or block/)
-            path = ResourceUtil.removePrefix(path, "item/");
-            path = ResourceUtil.removePrefix(path, "block/");
+            // 1. Try raw path first (1.12.2: "textures/items/diamond_sword.png")
+            byte[] content = ResourceUtil.loadAsBytes(context.getResourceManager(),
+                new ResourceLocation(namespace, "textures/" + rawPath + ".png"));
             
-            // Try item texture first
-            ResourceLocation itemLocation = new ResourceLocation(
-                namespace, "textures/item/" + path + ".png");
-            byte[] content = ResourceUtil.loadAsBytes(context.getResourceManager(), itemLocation);
+            // 2. Strip known prefixes and try standard paths
+            String strippedPath = rawPath;
+            strippedPath = ResourceUtil.removePrefix(strippedPath, "items/");
+            strippedPath = ResourceUtil.removePrefix(strippedPath, "item/");
+            strippedPath = ResourceUtil.removePrefix(strippedPath, "blocks/");
+            strippedPath = ResourceUtil.removePrefix(strippedPath, "block/");
             
-            // If not found, try block texture
             if (content == null) {
-                ResourceLocation blockLocation = new ResourceLocation(
-                    namespace, "textures/block/" + path + ".png");
-                content = ResourceUtil.loadAsBytes(context.getResourceManager(), blockLocation);
+                content = ResourceUtil.loadAsBytes(context.getResourceManager(),
+                    new ResourceLocation(namespace, "textures/items/" + strippedPath + ".png"));
             }
-            
-            // 1.12.2: also try "blocks/" instead of "block/"
             if (content == null) {
-                ResourceLocation blocksLocation = new ResourceLocation(
-                    namespace, "textures/blocks/" + path + ".png");
-                content = ResourceUtil.loadAsBytes(context.getResourceManager(), blocksLocation);
+                content = ResourceUtil.loadAsBytes(context.getResourceManager(),
+                    new ResourceLocation(namespace, "textures/item/" + strippedPath + ".png"));
             }
-            
-            // 1.12.2: also try "items/" instead of "item/"
             if (content == null) {
-                ResourceLocation itemsLocation = new ResourceLocation(
-                    namespace, "textures/items/" + path + ".png");
-                content = ResourceUtil.loadAsBytes(context.getResourceManager(), itemsLocation);
+                content = ResourceUtil.loadAsBytes(context.getResourceManager(),
+                    new ResourceLocation(namespace, "textures/blocks/" + strippedPath + ".png"));
+            }
+            if (content == null) {
+                content = ResourceUtil.loadAsBytes(context.getResourceManager(),
+                    new ResourceLocation(namespace, "textures/block/" + strippedPath + ".png"));
             }
             
             if (content == null) {
@@ -118,17 +116,18 @@ public class ItemExtractor extends BaseExtractor {
                 continue;
             }
             
+            // Use stripped name for output file
             Path outputPath = AssetWriter.getResourcePackPath(
                 context.getNamespace(),
                 "items",
                 context.getPath(),
                 "textures",
-                "item"
-            ).resolve(path + ".png");
+                "items"
+            ).resolve(strippedPath + ".png");
             
             if (textureWriter.write(outputPath, content)) {
                 result.incrementTextures();
-                result.addMessage("Extracted item texture: " + path);
+                result.addMessage("Extracted item texture: " + strippedPath);
             }
         }
     }
