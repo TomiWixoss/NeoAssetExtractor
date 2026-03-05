@@ -7,6 +7,7 @@ import com.neoassetextractor.core.ExtractionResult;
 import com.neoassetextractor.extractor.block.BlockExtractor;
 import com.neoassetextractor.extractor.entity.EntityExtractor;
 import com.neoassetextractor.extractor.item.ItemExtractor;
+import com.neoassetextractor.extractor.structure.StructureExtractor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -41,6 +42,9 @@ public class ExtractCommand {
                     .executes(ExtractCommand::extractEntity))
                 .then(Commands.literal("all")
                     .executes(ExtractCommand::extractAll))
+                .then(Commands.literal("structures")
+                    .then(Commands.argument("modId", com.mojang.brigadier.arguments.StringArgumentType.string())
+                        .executes(ExtractCommand::extractStructures)))
         );
     }
 
@@ -152,5 +156,24 @@ public class ExtractCommand {
             ));
             return 0;
         }
+    }
+    
+    private static int extractStructures(CommandContext<CommandSourceStack> context) {
+        String modId = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "modId");
+        
+        context.getSource().sendSuccess(() -> Component.literal(
+            "§aĐang extract structures từ mod: §e" + modId), false);
+        
+        int count = StructureExtractor.extractAllStructures(modId);
+        
+        if (count > 0) {
+            context.getSource().sendSuccess(() -> Component.literal(
+                "§a✓ Đã extract §e" + count + "§a structure(s) từ §e" + modId), false);
+        } else {
+            context.getSource().sendFailure(Component.literal(
+                "§cKhông tìm thấy structure nào từ mod: " + modId));
+        }
+        
+        return count;
     }
 }

@@ -65,33 +65,40 @@ public class RecipeExtractor {
         
         com.neoassetextractor.NeoAssetExtractor.LOGGER.info("Extracting recipe: {}", recipeId);
         
-        // Load recipe JSON từ data pack
-        ResourceLocation recipeLocation = ResourceLocation.fromNamespaceAndPath(
-            recipeId.getNamespace(),
-            "recipe/" + recipeId.getPath() + ".json"
-        );
-        
-        String recipeContent = ResourceUtil.loadAsString(
-            Minecraft.getInstance().getResourceManager(), recipeLocation);
-        
-        if (recipeContent == null) {
-            com.neoassetextractor.NeoAssetExtractor.LOGGER.warn("Recipe file not found: {}", recipeLocation);
-            return false;
-        }
-        
-        // Output path: {outputDir}/data/{namespace}/recipe/{recipe_name}.json
-        Path recipePath = outputDir
-            .resolve("data")
-            .resolve(recipeId.getNamespace())
-            .resolve("recipe")
-            .resolve(recipeId.getPath() + ".json");
-        
+        // Serialize recipe to JSON
         try {
-            AssetWriter.writeFile(recipePath, recipeContent);
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            
+            // Get serializer and encode recipe
+            var serializer = holder.value().getSerializer();
+            var registryAccess = Minecraft.getInstance().level.registryAccess();
+            var ops = registryAccess.createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE);
+            
+            // MapCodec needs to be converted to Codec first
+            var codec = serializer.codec().codec();
+            var encoded = codec.encodeStart(ops, holder.value());
+            
+            if (encoded.error().isPresent()) {
+                com.neoassetextractor.NeoAssetExtractor.LOGGER.error(
+                    "Failed to encode recipe {}: {}", recipeId, encoded.error().get());
+                return false;
+            }
+            
+            String recipeJson = gson.toJson(encoded.result().get());
+            
+            // Output path: {outputDir}/data/{namespace}/recipes/{recipe_name}.json
+            Path recipePath = outputDir
+                .resolve("data")
+                .resolve(recipeId.getNamespace())
+                .resolve("recipes")
+                .resolve(recipeId.getPath() + ".json");
+            
+            AssetWriter.writeFile(recipePath, recipeJson);
             com.neoassetextractor.NeoAssetExtractor.LOGGER.info("Wrote recipe: {}", recipePath);
             return true;
         } catch (Exception e) {
-            com.neoassetextractor.NeoAssetExtractor.LOGGER.error("Failed to write recipe: {}", e.getMessage());
+            com.neoassetextractor.NeoAssetExtractor.LOGGER.error(
+                "Failed to serialize recipe: {}", recipeId, e);
             return false;
         }
     }
