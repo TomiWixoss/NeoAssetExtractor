@@ -2,10 +2,12 @@ package com.neoassetextractor.parser;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.neoassetextractor.NeoAssetExtractor;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -25,8 +27,8 @@ public class ModelParser {
             
             if (json.has("textures")) {
                 JsonObject textures = json.getAsJsonObject("textures");
-                for (String key : textures.keySet()) {
-                    String texturePath = textures.get(key).getAsString();
+                for (Map.Entry<String, JsonElement> entry : textures.entrySet()) {
+                    String texturePath = entry.getValue().getAsString();
                     if (!texturePath.startsWith("#")) {
                         texturePaths.add(texturePath);
                     }

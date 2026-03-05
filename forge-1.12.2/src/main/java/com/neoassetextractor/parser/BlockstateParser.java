@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import com.neoassetextractor.NeoAssetExtractor;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -28,8 +29,8 @@ public class BlockstateParser {
             // Parse variants
             if (json.has("variants")) {
                 JsonObject variants = json.getAsJsonObject("variants");
-                for (String variantKey : variants.keySet()) {
-                    JsonElement variantValue = variants.get(variantKey);
+                for (Map.Entry<String, JsonElement> entry : variants.entrySet()) {
+                    JsonElement variantValue = entry.getValue();
                     
                     if (variantValue.isJsonArray()) {
                         for (JsonElement element : variantValue.getAsJsonArray()) {

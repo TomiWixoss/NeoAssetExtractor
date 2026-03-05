@@ -1,1 +1,19 @@
-// Forge 1.12.2 - NeoAssetExtractor
+pluginManagement {
+    repositories {
+        maven {
+            // RetroFuturaGradle
+            name = 'GTNH Maven'
+            url = 'https://nexus.gtnewhorizons.com/repository/public/'
+        }
+        gradlePluginPortal()
+        mavenCentral()
+        mavenLocal()
+    }
+}
+
+plugins {
+    // Automatic JDK toolchain provisioning (auto-downloads Java 8 if not installed)
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
+}
+
+rootProject.name = 'NeoAssetExtractor-1.12.2'

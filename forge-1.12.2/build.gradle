@@ -1,72 +1,56 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
-    }
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'com.gtnewhorizons.retrofuturagradle' version '1.4.0'
 }
 
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'java'
-
-version = mod_version
 group = mod_group_id
-archivesBaseName = mod_id
+version = mod_version
 
-sourceCompatibility = targetCompatibility = '1.8'
+// Use Java 8 toolchain for compilation (runs on any JDK including 21)
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+        vendor.set(org.gradle.jvm.toolchain.JvmVendorSpec.AZUL)
+    }
+    withSourcesJar()
+}
 
+// RFG Minecraft configuration
 minecraft {
-    mappings channel: 'snapshot', version: '20171003-1.12'
+    mcVersion.set('1.12.2')
+    
+    // Username for client run
+    username.set('Developer')
+    
+    // Enable assertions
+    extraRunJvmArguments.add("-ea:${project.group}")
+}
 
-    runs {
-        client {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-            property 'forge.logging.console.level', 'debug'
-            mods {
-                neoassetextractor {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        server {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-            property 'forge.logging.console.level', 'debug'
-            mods {
-                neoassetextractor {
-                    source sourceSets.main
-                }
-            }
-        }
+// Put version into mcmod.info
+tasks.processResources.configure {
+    def projVersion = project.version.toString()
+    inputs.property('version', projVersion)
+    
+    filesMatching('mcmod.info') {
+        expand('version': projVersion, 'mcversion': '1.12.2')
     }
 }
 
 repositories {
     mavenCentral()
-}
-
-dependencies {
-    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
-}
-
-jar {
-    manifest {
-        attributes([
-            "Specification-Title": mod_name,
-            "Specification-Vendor": "NeoAssetExtractor",
-            "Specification-Version": "1",
-            "Implementation-Title": mod_name,
-            "Implementation-Version": mod_version,
-            "Implementation-Vendor": "NeoAssetExtractor",
-            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
+    maven {
+        name = 'GTNH Maven'
+        url = 'https://nexus.gtnewhorizons.com/repository/public/'
     }
 }
 
-tasks.withType(JavaCompile) {
+dependencies {
+    // Forge is automatically provided by RFG via mcVersion config
+}
+
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
+
+
