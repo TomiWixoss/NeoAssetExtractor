@@ -1,5 +1,6 @@
 package com.neoassetextractor.extractor.block;
 
+import com.neoassetextractor.NeoAssetExtractor;
 import com.neoassetextractor.core.ExtractionContext;
 import com.neoassetextractor.core.ExtractionResult;
 import com.neoassetextractor.parser.ModelParser;
@@ -30,7 +31,7 @@ public class BlockTextureExtractor {
                 .colorMultiplier(context.getBlockState(), context.getWorld(), context.getBlockPos(), 0);
             hasColorHandler = (color != -1);
         }
-        
+    
         for (String modelPath : modelPaths) {
             extractTexturesFromModel(context, modelPath, hasColorHandler, extractedTextures, result);
         }
@@ -160,8 +161,9 @@ public class BlockTextureExtractor {
             tintIndex = 0;
         }
         
+        // 1.12.2 uses "blocks/" not "block/"
         ResourceLocation texLocation = new ResourceLocation(
-            namespace, "block/" + texturePath);
+            namespace, "blocks/" + texturePath);
         
         Path tintedPath = AssetWriter.getResourcePackPath(
             context.getNamespace(),
