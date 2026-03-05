@@ -1,26 +1,31 @@
-# eclipse
-bin
-*.launch
-.settings
-.metadata
-.classpath
-.project
+# Build outputs
+**/build/
+**/bin/
+**/out/
 
-# idea
-out
+# Gradle
+**/.gradle/
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
 *.ipr
 *.iws
-*.iml
-.idea
+.eclipse/
+.settings/
+.classpath
+.project
+.metadata/
 
-# gradle
-build
-.gradle
+# Runtime
+**/run/
+**/runs/
+**/logs/
 
-# other
-eclipse
-run
-runs
-run-data
+# OS
+.DS_Store
+Thumbs.db
 
-repo
+# Misc
+*.log

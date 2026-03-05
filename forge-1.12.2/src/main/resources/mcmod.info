@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "neoassetextractor",
+    "name": "NeoAssetExtractor",
+    "description": "Runtime Asset Extraction Mod - Trích xuất chính xác tài nguyên đồ họa (Model, Texture, Animation) của bất kỳ vật thể nào đang được render trên màn hình.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["NeoAssetExtractor"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
